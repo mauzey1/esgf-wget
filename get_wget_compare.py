@@ -37,14 +37,16 @@ def gen_script(data_node, index_node, num_datasets, file_limit, output_dir):
 
     dataset_query = 'dataset_id={}'.format('&dataset_id='.join([d['id'] for d in dataset_list]))
 
+    # Download wget script from another server
     urllib.request.urlretrieve(esgf_wget_api_url.format(index_node=index_node, 
                                                         limit=file_limit, 
                                                         query=dataset_query), 
-                               os.path.join(output_dir, 'wget-esgf-node.sh'))
+                               os.path.join(output_dir, 'wget-{}.sh'.format(index_node)))
     
+    # Download wget script from local API
     urllib.request.urlretrieve(local_wget_api_url.format(limit=file_limit, 
                                                          query=dataset_query), 
-                               os.path.join(output_dir, 'wget-{}.sh'.format(index_node)))
+                               os.path.join(output_dir, 'wget-local-api.sh'))
 
 def main():
 
