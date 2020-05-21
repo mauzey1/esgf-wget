@@ -1,4 +1,5 @@
 import urllib.request
+import urllib.parse
 import os
 import json
 import datetime
@@ -28,25 +29,27 @@ def get_datasets(data_node, index_node, num_datasets):
 
 def gen_script(data_node, index_node, num_datasets, file_limit, output_dir):
 
+    current_datetime = datetime.datetime.now()
+    timestamp = current_datetime.strftime('%Y%m%d%H%M%S')
+
     dataset_list = get_datasets(data_node, index_node, num_datasets)
-    
-    esgf_wget_api_url = 'https://{index_node}/esg-search/wget/?' \
-                        'distrib=false&limit={limit}&{query}'
 
-    local_wget_api_url = 'http://127.0.0.1:8000/wget?limit={limit}&{query}'
-
-    dataset_query = 'dataset_id={}'.format('&dataset_id='.join([d['id'] for d in dataset_list]))
+    dataset_id_list = [d['id'] for d in dataset_list]
 
     # Download wget script from another server
-    urllib.request.urlretrieve(esgf_wget_api_url.format(index_node=index_node, 
-                                                        limit=file_limit, 
-                                                        query=dataset_query), 
-                               os.path.join(output_dir, 'wget-{}.sh'.format(index_node)))
-    
+    index_node_api_url = 'https://{index_node}/esg-search/wget/'.format(index_node=index_node)
+    index_node_script = os.path.join(output_dir, 'wget-{}-{}.sh'.format(timestamp, index_node))
+    index_node_params = urllib.parse.urlencode(dict(distrib='false',
+                                                    limit=file_limit,
+                                                    dataset_id=dataset_id_list), doseq=True).encode()
+    urllib.request.urlretrieve(index_node_api_url, filename=index_node_script, data=index_node_params)
+
     # Download wget script from local API
-    urllib.request.urlretrieve(local_wget_api_url.format(limit=file_limit, 
-                                                         query=dataset_query), 
-                               os.path.join(output_dir, 'wget-local-api.sh'))
+    local_wget_api_url = 'http://127.0.0.1:8000/wget'
+    local_script = os.path.join(output_dir, 'wget-{}-local-api.sh'.format(timestamp))
+    local_params = urllib.parse.urlencode(dict(limit=file_limit, 
+                                               dataset_id=dataset_id_list), doseq=True).encode()
+    urllib.request.urlretrieve(local_wget_api_url, filename=local_script, data=local_params)
 
 def main():
 
